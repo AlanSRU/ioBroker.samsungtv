@@ -67,7 +67,10 @@
     "Stable identity note": "La dirección MAC se utiliza para seguir los cambios de dirección DHCP. El nombre descriptivo define la ruta del objeto.",
     "TVs found": "%s televisores detectados.",
     "Token": "Token",
+    "Token changed": "El televisor devolvió un token diferente. No se guardó nada.",
+    "Token rejected": "El token no es válido o fue rechazado por el televisor.",
     "Token saved": "Token verificado y guardado",
+    "Token verification unavailable": "No se pudo contactar con el televisor para verificar el token.",
     "Unknown": "Desconocido",
     "Unknown device": "Dispositivo desconocido",
     "mDNS services": "Servicios mDNS"

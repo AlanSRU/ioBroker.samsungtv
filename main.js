@@ -2077,7 +2077,7 @@ async function validateTizenToken(device, token) {
             lastError = e;
         }
     }
-    throw lastError || new Error('Token verification failed');
+    throw lastError || new Error('Token verification unavailable');
 }
 
 function validateTizenTokenWithUrl(url, expectedToken) {
@@ -2108,17 +2108,17 @@ function validateTizenTokenWithUrl(url, expectedToken) {
             } catch (e) {
                 // ignore
             }
-            finish(new Error('Token verification timeout'));
+            finish(new Error('Token verification unavailable'));
         }, WS_CONNECT_TIMEOUT);
 
         ws.on('error', error => {
             const kind = error.code || error.name || 'error';
             adapter.log.debug(`Token verification WS error: ${safeUrl}: ${kind}`);
-            finish(new Error(`Token verification WebSocket error (${kind})`));
+            finish(new Error('Token verification unavailable'));
         });
         ws.on('close', code => {
             if (!done) {
-                finish(new Error(`Token verification connection closed (code ${code})`));
+                finish(new Error('Token verification unavailable'));
             }
         });
         ws.on('message', data => {

@@ -67,7 +67,10 @@
     "Stable identity note": "The MAC address is used to follow DHCP address changes. The friendly name defines the object path.",
     "TVs found": "%s TVs found.",
     "Token": "Token",
+    "Token changed": "The TV returned a different token. Nothing was saved.",
+    "Token rejected": "The token is invalid or was rejected by the TV.",
     "Token saved": "Token verified and saved",
+    "Token verification unavailable": "The TV could not be reached to verify the token.",
     "Unknown": "Unknown",
     "Unknown device": "Unknown device",
     "mDNS services": "mDNS services"

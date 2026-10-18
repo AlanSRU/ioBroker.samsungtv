@@ -67,7 +67,10 @@
     "Stable identity note": "Het MAC-adres wordt gebruikt om DHCP-adreswijzigingen te volgen. De beschrijvende naam definieert het objectpad.",
     "TVs found": "%s tv’s gevonden.",
     "Token": "Token",
+    "Token changed": "De tv heeft een ander token teruggestuurd. Er is niets opgeslagen.",
+    "Token rejected": "Het token is ongeldig of door de tv geweigerd.",
     "Token saved": "Token geverifieerd en opgeslagen",
+    "Token verification unavailable": "De tv kon niet worden bereikt om het token te controleren.",
     "Unknown": "Onbekend",
     "Unknown device": "Onbekend apparaat",
     "mDNS services": "mDNS-diensten"
