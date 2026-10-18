@@ -30,6 +30,7 @@ const {
     wellKnownRenderingControlUrl,
 } = require('./lib/upnpTools');
 const { boundedSeconds } = require('./lib/timerTools');
+const { evaluateTizenTokenMessage } = require('./lib/tizenTokenTools');
 const { SamsungTvDeviceManagement } = require('./lib/SamsungTvDeviceManagement');
 
 const HJ_DEVICE_CONFIG = {
@@ -517,7 +518,15 @@ async function removeManagedDevice(id) {
 }
 
 async function pairManagedTizen(device) {
-    const token = await pairTizen(device);
+    await storeManagedTizenToken(device, await pairTizen(device));
+}
+
+async function setManagedTizenToken(device, token) {
+    await validateTizenToken(device, token);
+    await storeManagedTizenToken(device, token);
+}
+
+async function storeManagedTizenToken(device, token) {
     await setInMemoryToken(device.id, token);
     if (device.api !== 'tizen') {
         device.api = 'tizen';
@@ -552,6 +561,7 @@ function createDeviceManagementService() {
         requestPin: hjRequestPin,
         confirmPin: confirmManagedHjPin,
         pairTizen: pairManagedTizen,
+        setTizenToken: setManagedTizenToken,
     };
 }
 
@@ -1945,7 +1955,7 @@ function buildTizenWsCandidates(device, token, apiVersions = ['v2']) {
         added.add(key);
         let url = `${protocol}://${device.ip}:${port}/api/${apiVersion}/channels/samsung.remote.control?name=${nameBase64}`;
         if (token && token !== NO_TOKEN) {
-            url += `&token=${token}`;
+            url += `&token=${encodeURIComponent(token)}`;
         }
         candidates.push(url);
     };
@@ -2050,6 +2060,80 @@ function buildTizenWsOptions(url) {
     } catch (e) {
         return { rejectUnauthorized: false, handshakeTimeout: WS_CONNECT_TIMEOUT, perMessageDeflate: false };
     }
+}
+
+async function validateTizenToken(device, token) {
+    if (!device || !device.ip) {
+        throw new Error('No IP');
+    }
+    const urls = buildTizenWsCandidates(device, token, ['v2', 'v3']);
+    let lastError;
+    for (const url of urls) {
+        try {
+            await validateTizenTokenWithUrl(url, token);
+            adapter.log.debug(`Tizen token verified for ${device.name}`);
+            return;
+        } catch (e) {
+            lastError = e;
+        }
+    }
+    throw lastError || new Error('Token verification unavailable');
+}
+
+function validateTizenTokenWithUrl(url, expectedToken) {
+    return new Promise((resolve, reject) => {
+        const safeUrl = url.replace(/token=[^&]+/i, 'token=***');
+        const ws = new WebSocket(url, buildTizenWsOptions(url));
+        let done = false;
+        const finish = error => {
+            if (done) {
+                return;
+            }
+            done = true;
+            adapter.clearTimeout(timeout);
+            try {
+                ws.close();
+            } catch (e) {
+                // ignore
+            }
+            if (error) {
+                reject(error);
+            } else {
+                resolve();
+            }
+        };
+        const timeout = adapter.setTimeout(() => {
+            try {
+                ws.terminate();
+            } catch (e) {
+                // ignore
+            }
+            finish(new Error('Token verification unavailable'));
+        }, WS_CONNECT_TIMEOUT);
+
+        ws.on('error', error => {
+            const kind = error.code || error.name || 'error';
+            adapter.log.debug(`Token verification WS error: ${safeUrl}: ${kind}`);
+            finish(new Error('Token verification unavailable'));
+        });
+        ws.on('close', code => {
+            if (!done) {
+                finish(new Error('Token verification unavailable'));
+            }
+        });
+        ws.on('message', data => {
+            let message;
+            try {
+                message = JSON.parse(data.toString());
+            } catch (e) {
+                return;
+            }
+            const result = evaluateTizenTokenMessage(message, expectedToken);
+            if (result) {
+                finish(result.accepted ? undefined : new Error(result.error));
+            }
+        });
+    });
 }
 
 async function pairTizen(device) {
