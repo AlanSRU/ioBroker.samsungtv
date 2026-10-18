@@ -67,7 +67,7 @@
     "Stable identity note": "MAC 地址用于跟随 DHCP 地址更改。友好名称定义对象路径。",
     "TVs found": "找到 %s 台电视。",
     "Token": "令牌",
-    "Token saved": "令牌已保存",
+    "Token saved": "令牌已验证并保存",
     "Unknown": "未知",
     "Unknown device": "未知设备",
     "mDNS services": "mDNS 服务"

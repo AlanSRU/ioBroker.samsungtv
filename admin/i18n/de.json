@@ -67,7 +67,7 @@
     "Stable identity note": "Die MAC-Adresse verfolgt DHCP-Adressänderungen. Der Anzeigename bestimmt den Objektpfad.",
     "TVs found": "%s TVs gefunden.",
     "Token": "Token",
-    "Token saved": "Token gespeichert",
+    "Token saved": "Token geprüft und gespeichert",
     "Unknown": "Unbekannt",
     "Unknown device": "Unbekanntes Gerät",
     "mDNS services": "mDNS-Dienste"

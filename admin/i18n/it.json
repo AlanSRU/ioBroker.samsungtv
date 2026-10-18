@@ -67,7 +67,7 @@
     "Stable identity note": "L'indirizzo MAC viene utilizzato per seguire le modifiche dell'indirizzo DHCP. Il nome descrittivo definisce il percorso dell'oggetto.",
     "TVs found": "%s TV rilevate.",
     "Token": "Token",
-    "Token saved": "Token salvato",
+    "Token saved": "Token verificato e salvato",
     "Unknown": "Sconosciuto",
     "Unknown device": "Dispositivo sconosciuto",
     "mDNS services": "Servizi mDNS"

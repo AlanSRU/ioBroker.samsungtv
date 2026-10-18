@@ -67,7 +67,7 @@
     "Stable identity note": "The MAC address is used to follow DHCP address changes. The friendly name defines the object path.",
     "TVs found": "%s TVs found.",
     "Token": "Token",
-    "Token saved": "Token saved",
+    "Token saved": "Token verified and saved",
     "Unknown": "Unknown",
     "Unknown device": "Unknown device",
     "mDNS services": "mDNS services"

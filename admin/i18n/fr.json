@@ -67,7 +67,7 @@
     "Stable identity note": "L'adresse MAC est utilisée pour suivre les changements d'adresse DHCP. Le nom convivial définit le chemin de l'objet.",
     "TVs found": "%s téléviseurs détectés.",
     "Token": "Jeton",
-    "Token saved": "Jeton enregistré",
+    "Token saved": "Jeton vérifié et enregistré",
     "Unknown": "Inconnu",
     "Unknown device": "Appareil inconnu",
     "mDNS services": "Services mDNS"
