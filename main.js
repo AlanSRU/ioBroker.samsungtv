@@ -33,6 +33,7 @@ const { boundedSeconds } = require('./lib/timerTools');
 const { evaluateTizenTokenMessage } = require('./lib/tizenTokenTools');
 const { SamsungTvDeviceManagement } = require('./lib/SamsungTvDeviceManagement');
 const { shouldMigrateLegacySamsung } = require('./lib/legacyMigrationTools');
+const { acceptPowerUpdate, startPowerTransition } = require('./lib/powerTransitionTools');
 
 const HJ_DEVICE_CONFIG = {
     appId: '721b6fce-4ee6-48ba-8045-955a539edadb',
@@ -1032,8 +1033,10 @@ async function pollDevice(device) {
         const status = await checkDeviceStatus(device);
         const audio = resolveAudioStates(device, status);
         await adapter.setStateAsync(`${device.name}.info.online`, status.online, true);
-        await adapter.setStateAsync(`${device.name}.state.power`, status.power, true);
-        await adapter.setStateAsync(`${device.name}.control.power`, status.power, true);
+        if (acceptPowerUpdate(device, status.power, Date.now())) {
+            await adapter.setStateAsync(`${device.name}.state.power`, status.power, true);
+            await adapter.setStateAsync(`${device.name}.control.power`, status.power, true);
+        }
         await adapter.setStateAsync(`${device.name}.state.volume`, audio.volume, true);
         await adapter.setStateAsync(`${device.name}.state.muted`, audio.muted, true);
         if (typeof audio.volume === 'number') {
@@ -1048,9 +1051,8 @@ async function pollDevice(device) {
                 adapter.log.debug(`UPnP subscribe failed for ${device.name}: ${e.message}`),
             );
         }
-        return status;
     } catch (e) {
-        return null;
+        // ignore
     }
 }
 
@@ -1156,28 +1158,6 @@ function scheduleDevicePoll(device, delayMs) {
     }
     const delay = Math.max(500, delayMs || 0);
     adapter.setTimeout(() => pollDevice(device), delay);
-}
-
-// After a power command, poll every 2 s for up to 30 s until the TV reports the
-// requested state, so a switch on or off shows up without waiting for the regular poll.
-function startPowerPollBurst(device, targetOn) {
-    const burst = { until: Date.now() + POWER_POLL_DURATION };
-    device.powerPollBurst = burst;
-    const tick = async () => {
-        if (device.powerPollBurst !== burst) {
-            return;
-        }
-        const status = await pollDevice(device);
-        if (device.powerPollBurst !== burst) {
-            return;
-        }
-        if ((status && status.power === targetOn) || Date.now() >= burst.until) {
-            delete device.powerPollBurst;
-            return;
-        }
-        adapter.setTimeout(tick, POWER_POLL_INTERVAL);
-    };
-    adapter.setTimeout(tick, POWER_POLL_INTERVAL);
 }
 
 function extractPowerState(info) {
@@ -1470,9 +1450,17 @@ async function handleControl(device, id, command, value) {
     switch (command) {
         case 'power':
             await setPower(device, !!value);
+            // Poll every 2 s for up to 30 s until the TV reports the new state, without
+            // publishing the old state in between.
+            startPowerTransition(device, !!value, {
+                poll: () => pollDevice(device),
+                schedule: (fn, delay) => adapter.setTimeout(fn, delay),
+                now: Date.now,
+                interval: POWER_POLL_INTERVAL,
+                duration: POWER_POLL_DURATION,
+            });
             await adapter.setStateAsync(id, !!value, true);
             await adapter.setStateAsync(`${device.name}.state.power`, !!value, true);
-            startPowerPollBurst(device, !!value);
             return;
         case 'wol':
             if (adapter.config.enableWol && device.mac) {
