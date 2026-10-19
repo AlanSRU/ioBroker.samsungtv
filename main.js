@@ -33,6 +33,7 @@ const { boundedSeconds } = require('./lib/timerTools');
 const { evaluateTizenTokenMessage } = require('./lib/tizenTokenTools');
 const { SamsungTvDeviceManagement } = require('./lib/SamsungTvDeviceManagement');
 const { shouldMigrateLegacySamsung } = require('./lib/legacyMigrationTools');
+const { acceptPowerUpdate, startPowerTransition } = require('./lib/powerTransitionTools');
 
 const HJ_DEVICE_CONFIG = {
     appId: '721b6fce-4ee6-48ba-8045-955a539edadb',
@@ -49,6 +50,8 @@ const MAX_SCAN_INTERVAL_SECONDS = 86400;
 const MAX_DISCOVERY_TIMEOUT_SECONDS = 60;
 const UPNP_REQUEST_TIMEOUT = 1500;
 const DEVICE_ERROR_QUALITY = 0x44;
+const POWER_POLL_INTERVAL = 2000;
+const POWER_POLL_DURATION = 30000;
 
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 const xmlParser = new XMLParser({ ignoreAttributes: false });
@@ -1030,8 +1033,10 @@ async function pollDevice(device) {
         const status = await checkDeviceStatus(device);
         const audio = resolveAudioStates(device, status);
         await adapter.setStateAsync(`${device.name}.info.online`, status.online, true);
-        await adapter.setStateAsync(`${device.name}.state.power`, status.power, true);
-        await adapter.setStateAsync(`${device.name}.control.power`, status.power, true);
+        if (acceptPowerUpdate(device, status.power, Date.now())) {
+            await adapter.setStateAsync(`${device.name}.state.power`, status.power, true);
+            await adapter.setStateAsync(`${device.name}.control.power`, status.power, true);
+        }
         await adapter.setStateAsync(`${device.name}.state.volume`, audio.volume, true);
         await adapter.setStateAsync(`${device.name}.state.muted`, audio.muted, true);
         if (typeof audio.volume === 'number') {
@@ -1445,6 +1450,15 @@ async function handleControl(device, id, command, value) {
     switch (command) {
         case 'power':
             await setPower(device, !!value);
+            // Poll every 2 s for up to 30 s until the TV reports the new state, without
+            // publishing the old state in between.
+            startPowerTransition(device, !!value, {
+                poll: () => pollDevice(device),
+                schedule: (fn, delay) => adapter.setTimeout(fn, delay),
+                now: Date.now,
+                interval: POWER_POLL_INTERVAL,
+                duration: POWER_POLL_DURATION,
+            });
             await adapter.setStateAsync(id, !!value, true);
             await adapter.setStateAsync(`${device.name}.state.power`, !!value, true);
             return;

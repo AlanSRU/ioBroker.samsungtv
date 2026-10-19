@@ -105,6 +105,7 @@ Note: not every TV supports every key. Some keys only work when a menu/focus is 
 
 ### **WORK IN PROGRESS**
 - Add a **Set token** Device Manager action that verifies a known Tizen token before storing it.
+- Poll every 2 s for up to 30 s after a power command until the TV reports the new state.
 - Add absolute volume and mute (`control.volume`, `control.muted`) over UPnP RenderingControl.
 - Fall back to the well-known RenderingControl endpoint when SSDP returns nothing.
 - (ioBroker-Bot) Adapter requires admin >= 7.8.23 now.
