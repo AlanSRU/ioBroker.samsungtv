@@ -49,6 +49,8 @@ const MAX_SCAN_INTERVAL_SECONDS = 86400;
 const MAX_DISCOVERY_TIMEOUT_SECONDS = 60;
 const UPNP_REQUEST_TIMEOUT = 1500;
 const DEVICE_ERROR_QUALITY = 0x44;
+const POWER_POLL_INTERVAL = 2000;
+const POWER_POLL_DURATION = 30000;
 
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 const xmlParser = new XMLParser({ ignoreAttributes: false });
@@ -1046,8 +1048,9 @@ async function pollDevice(device) {
                 adapter.log.debug(`UPnP subscribe failed for ${device.name}: ${e.message}`),
             );
         }
+        return status;
     } catch (e) {
-        // ignore
+        return null;
     }
 }
 
@@ -1153,6 +1156,28 @@ function scheduleDevicePoll(device, delayMs) {
     }
     const delay = Math.max(500, delayMs || 0);
     adapter.setTimeout(() => pollDevice(device), delay);
+}
+
+// After a power command, poll every 2 s for up to 30 s until the TV reports the
+// requested state, so a switch on or off shows up without waiting for the regular poll.
+function startPowerPollBurst(device, targetOn) {
+    const burst = { until: Date.now() + POWER_POLL_DURATION };
+    device.powerPollBurst = burst;
+    const tick = async () => {
+        if (device.powerPollBurst !== burst) {
+            return;
+        }
+        const status = await pollDevice(device);
+        if (device.powerPollBurst !== burst) {
+            return;
+        }
+        if ((status && status.power === targetOn) || Date.now() >= burst.until) {
+            delete device.powerPollBurst;
+            return;
+        }
+        adapter.setTimeout(tick, POWER_POLL_INTERVAL);
+    };
+    adapter.setTimeout(tick, POWER_POLL_INTERVAL);
 }
 
 function extractPowerState(info) {
@@ -1447,6 +1472,7 @@ async function handleControl(device, id, command, value) {
             await setPower(device, !!value);
             await adapter.setStateAsync(id, !!value, true);
             await adapter.setStateAsync(`${device.name}.state.power`, !!value, true);
+            startPowerPollBurst(device, !!value);
             return;
         case 'wol':
             if (adapter.config.enableWol && device.mac) {
