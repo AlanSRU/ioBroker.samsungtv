@@ -104,6 +104,7 @@ Note: not every TV supports every key. Some keys only work when a menu/focus is 
 ## Changelog
 
 ### **WORK IN PROGRESS**
+- Add an optional **Wait for the TV** power state mode: `state.power` only changes once the TV confirms, and `control.power` stays unacknowledged until then.
 - Add a **Set token** Device Manager action that verifies a known Tizen token before storing it.
 - Poll every 2 s for up to 30 s after a power command until the TV reports the new state.
 - Add absolute volume and mute (`control.volume`, `control.muted`) over UPnP RenderingControl.
