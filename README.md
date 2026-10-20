@@ -28,6 +28,7 @@ The **Configuration** tab contains:
 - **Discovery timeout**
 - **Enable SSDP** / **Enable mDNS** discovery sources
 - **Enable Wake-on-LAN**
+- **Power state after a power command**: *Show immediately* (default) sets `state.power` and acknowledges `control.power` as soon as the command is sent. *Wait for the TV* leaves `state.power` at the last confirmed state and `control.power` unacknowledged until a poll confirms the new state. If the TV doesn't confirm within 30 s of the command, or the command fails, both are set to the measured state.
 - **mDNS services** in expert mode (comma-separated, best effort)
 
 ### Add devices
